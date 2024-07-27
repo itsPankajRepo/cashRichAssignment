@@ -2,10 +2,12 @@ package com.assignment.cashRich.service;
 
 import com.assignment.cashRich.entity.UserToken;
 import com.assignment.cashRich.repository.UserTokenRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class TokenServiceImp implements TokenService{
 
    @Autowired
@@ -21,10 +23,13 @@ public class TokenServiceImp implements TokenService{
     @Override
     public void saveUserToken(UserToken userToken) {
         var userTokenOptional = userTokenRepository.findByUsername(userToken.getUsername());
-        if(userTokenOptional.isPresent()){
+        if (userTokenOptional.isPresent()) {
+            log.info("Going to update token for user {}", userToken.getUsername());
             userTokenRepository.updateToken(userToken.getToken(), userToken.getUsername());
-        }else
+        } else {
+            log.info("Going to save new  token for user {}", userToken.getUsername());
             userTokenRepository.save(userToken);
+        }
     }
 
     @Override

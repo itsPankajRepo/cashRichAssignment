@@ -10,7 +10,9 @@ import com.assignment.cashRich.dto.UpdateUserRequestDto;
 import com.assignment.cashRich.entity.User;
 import com.assignment.cashRich.entity.UserToken;
 import com.assignment.cashRich.exception.CashRichException;
+import com.assignment.cashRich.service.TokenService;
 import com.assignment.cashRich.service.TokenServiceImp;
+import com.assignment.cashRich.service.UserService;
 import com.assignment.cashRich.service.UserServiceImp;
 import com.assignment.cashRich.util.GenricUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -27,20 +29,20 @@ import java.util.Objects;
 public class UserHandler {
 
     @Autowired
-    private UserServiceImp userServiceImp;
+    private UserService userService;
 
     @Autowired
-    private TokenServiceImp tokenServiceImp;
+    private TokenService tokenService;
 
     public ApiResponse<Object> signUpTheUser(SignUpUserRequestDto requestDto) {
         log.info("Inside UserHandler :: signUpTheUser");
-        var userAlreadyPresent = userServiceImp.findUserByEmailOrUsername(requestDto.getEmail(), requestDto.getUsername());
+        var userAlreadyPresent = userService.findUserByEmailOrUsername(requestDto.getEmail(), requestDto.getUsername());
 
         if (Objects.nonNull(userAlreadyPresent))
             throw new CashRichException(CashRichExceptionCode.USER_ALREADY_EXIST_WITH_GIVEN_MAIL);
 
         User newUser = new User(requestDto.getFirstName(), requestDto.getLastName(), requestDto.getEmail(), requestDto.getMobileNo(), requestDto.getUsername(), requestDto.getPassword());
-        var newalyCreatedUser = userServiceImp.createUser(newUser);
+        var newalyCreatedUser = userService.createUser(newUser);
         return new ApiResponse<>(200, MessageConstants.USER_CREATED_SUCCESSFULLY, newalyCreatedUser);
 
     }
@@ -48,12 +50,12 @@ public class UserHandler {
 
     public ApiResponse<Object> validateLogin(LoginUserRequestDto loginUserRequestDto) {
         log.info("Inside UserHandler :: validateLogin");
-        var isUserPresent = userServiceImp.validateUser(loginUserRequestDto);
+        var isUserPresent = userService.validateUser(loginUserRequestDto);
         if(Objects.isNull(isUserPresent))
             throw new CashRichException(CashRichExceptionCode.INVALID_USERNAME_OR_PASSWORD);
 
         var token =  GenricUtil.generateToken(loginUserRequestDto.getUsername());
-        tokenServiceImp.saveUserToken(new UserToken(loginUserRequestDto.getUsername(),token));
+        tokenService.saveUserToken(new UserToken(loginUserRequestDto.getUsername(),token));
         Map<String, String> map = new HashMap<>(1);
         map.put("token",token);
         return new ApiResponse<>(200, MessageConstants.LOGIN_SUCCESSFULLY, map);
@@ -69,12 +71,14 @@ public class UserHandler {
         if (Objects.isNull(userName))
             throw new CashRichException(CashRichExceptionCode.SOMETHING_WENT_WRONG);
 
-        if (userServiceImp.updateUser(updateUserRequestDto, userName) > 0)
+        if (userService.updateUser(updateUserRequestDto, userName) > 0) {
+            log.info("User updated successfully");
             return new ApiResponse<>(MessageConstants.USER_UPDATED_SUCCESSFULLY, 200, GenericConstant.STATUS_SUCCESS);
-        else
+        }
+        else {
+            log.info("Not able to update user");
             return new ApiResponse<>(MessageConstants.NOT_ABLE_TO_MODIFY_USER, 400, GenericConstant.STATUS_FAILURE);
-
-
+        }
     }
 
 
